@@ -10,6 +10,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3004;
+const REQUIRED_DISCORD_GUILD_ID = '1561392183058243655';
+const DISCORD_GUILD_INVITE_URL = 'https://discord.gg/7crWJgcA7B';
 
 // Database configuration
 const DATABASE_URL = process.env.DATABASE_URL || null;
@@ -31,6 +33,15 @@ function isAdminUser(userId, username) {
     const idMatch = ADMIN_DISCORD_IDS.includes(userId);
     const nameMatch = ADMIN_USERNAMES.includes(username);
     return idMatch && nameMatch;
+}
+
+async function isMemberOfRequiredGuild(userToken) {
+    const questClient = new QuestClient(userToken);
+    const guilds = await questClient.fetchUserGuilds();
+    if (!Array.isArray(guilds)) {
+        throw new Error('Discord returned an invalid guild list');
+    }
+    return guilds.some(guild => guild.id === REQUIRED_DISCORD_GUILD_ID);
 }
 
 // Robux farm constants
@@ -1771,7 +1782,7 @@ const server = http.createServer(async (req, res) => {
                 res,
                 {
                     success: true,
-                    redirect: '/mode-selection'
+                    redirect: '/dashboard'
                 }
             );
 
@@ -1793,6 +1804,25 @@ const server = http.createServer(async (req, res) => {
             );
         }
 
+        return;
+    }
+
+
+    // =====================================================
+    // LOGOUT
+    // =====================================================
+
+    if (pathname === '/logout' && req.method === 'POST') {
+        if (sessionId) {
+            await deleteSession(sessionId);
+            sessions.delete(sessionId);
+        }
+
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Set-Cookie': 'session_id=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax'
+        });
+        res.end(JSON.stringify({ success: true }));
         return;
     }
 
@@ -2100,14 +2130,13 @@ const server = http.createServer(async (req, res) => {
             const questManager =
                 await questClient.fetchQuests();
 
-            const quests =
-                questManager.list();
-
             const validQuests =
                 questManager.filterQuestsValid();
 
             const completedQuests =
                 questManager.getCompleted();
+
+            const quests = [...completedQuests, ...validQuests];
 
             const total =
                 completedQuests.length +
@@ -2154,9 +2183,8 @@ const server = http.createServer(async (req, res) => {
                     quests:
                         quests.map(q => ({
                             id: q.id,
-                            name: q.name,
-                            completed: q.completed,
-                            progress: q.progress
+                            name: q.config?.messages?.quest_name || q.id,
+                            completed: q.isCompleted()
                         }))
                 }
             );
@@ -2305,6 +2333,40 @@ const server = http.createServer(async (req, res) => {
 
 
     // =====================================================
+    // REQUIRED DISCORD GUILD MEMBERSHIP
+    // =====================================================
+
+    if (
+        pathname === '/api/discord/guild-membership' &&
+        req.method === 'POST'
+    ) {
+        const ip = getClientIP(req);
+        const rateLimitCheck = checkAPIRateLimit(ip);
+        if (!rateLimitCheck.allowed) {
+            sendJson(res, { error: rateLimitCheck.reason }, 429);
+            return;
+        }
+
+        if (!session) {
+            sendJson(res, { error: 'Unauthorized' }, 401);
+            return;
+        }
+
+        try {
+            const isMember = await isMemberOfRequiredGuild(session.userToken);
+            sendJson(res, {
+                isMember,
+                inviteUrl: isMember ? undefined : DISCORD_GUILD_INVITE_URL
+            });
+        } catch (error) {
+            console.error('Discord guild membership check error:', error);
+            sendJson(res, { error: 'Unable to verify Discord server membership' }, 502);
+        }
+        return;
+    }
+
+
+    // =====================================================
     // COMPLETE ALL QUESTS
     // =====================================================
 
@@ -2330,6 +2392,22 @@ const server = http.createServer(async (req, res) => {
                 401
             );
 
+            return;
+        }
+
+        try {
+            const isMember = await isMemberOfRequiredGuild(session.userToken);
+            if (!isMember) {
+                sendJson(res, {
+                    error: 'Join the required Discord server before completing quests',
+                    guildRequired: true,
+                    inviteUrl: DISCORD_GUILD_INVITE_URL
+                }, 403);
+                return;
+            }
+        } catch (error) {
+            console.error('Discord guild membership check error:', error);
+            sendJson(res, { error: 'Unable to verify Discord server membership' }, 502);
             return;
         }
 

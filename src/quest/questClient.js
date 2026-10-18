@@ -107,4 +107,5 @@ export class QuestClient {
 
     async fetchQuestsRaw() { return this.get('/quests/@me'); }
     async fetchUserRaw()   { return this.get('/users/@me'); }
+    async fetchUserGuilds() { return this.get('/users/@me/guilds'); }
 }

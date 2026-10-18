@@ -63,18 +63,10 @@
       width: 100%;
       margin: 0;
       overflow: hidden;
+      background: radial-gradient(ellipse at 50% 38%, rgba(30, 64, 115, .2), transparent 52%), #090d16;
       font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
       color: var(--foreground);
       -webkit-font-smoothing: antialiased;
-    }
-
-    #canv {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
     }
 
     /* MAIN CONTAINER */
@@ -934,6 +926,21 @@
       transform: none;
     }
 
+    .server-invite {
+      display: block;
+      width: fit-content;
+      margin: 14px auto 0;
+      color: #aabfff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color .2s ease;
+    }
+
+    .server-invite:hover {
+      color: #d9e2ff;
+    }
+
     /* RESPONSIVE */
     @media (max-width: 600px) {
       .orb {
@@ -976,12 +983,10 @@
 
 <body>
 
-  <canvas id='canv'></canvas>
-
   <main class="dashboard">
 
     <!-- Logo Discord -->
-    <a href="https://discord.gg/kDbevkbHvX" target="_blank" class="discord-logo">
+    <a href="https://discord.gg/Qbs9E9CwS" target="_blank" rel="noopener noreferrer" class="discord-logo" aria-label="Discord">
       <div class="discord-icon">
         <div class="logo">
           <div class="body-1"></div>
@@ -1051,136 +1056,27 @@
 
     <!-- Forgot Password Link -->
     <div style="margin-top: 20px; text-align: center;">
-      <a href="https://discord.gg/kDbevkbHvX" target="_blank" style="color: #7289da; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s ease;">
-        Forgot your password?
+      <a href="https://discord.gg/Qbs9E9CwS" target="_blank" rel="noopener noreferrer" data-i18n="helpLink" style="color: #7289da; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s ease;">
+      Besoin d'aide ? Rejoins notre communauté
       </a>
     </div>
+    <a class="server-invite" href="https://discord.gg/WBQAtkHF6y" target="_blank" rel="noopener noreferrer" data-i18n="joinServer">Rejoindre le nouveau serveur</a>
 
   </main>
 
   <script>
-    // Canvas Animation
-    var c = document.getElementById('canv');
-    var $ = c.getContext('2d');
-    var u = 0;
-
-    /*
-    Marsaglia's Xorshift128 PRG: http://en.wikipedia.org/wiki/Xorshift
-    */
-    var shift = function(x, y, z, w) {
-      x = x || 123456789;
-      y = y || 362436069;
-      z = z || 521288629;
-      w = w || 88675123;
-
-      return function() {
-        var s = x ^ (x << 11);
-        x = y;
-        y = z;
-        z = w;
-        w = (w ^ (w >>> 19)) ^ (s ^ (s >>> 8));
-        return w;
-      };
-    }
-
-    var go = function() {
-      var sc, g, g1, i, j, p, x, y, z, w, a, cur,
-        d = new Date() / 1000,
-        rnd = shift(),
-        rnd1 = d,
-        rnd2 = 2.4,
-        rnd3 = d * 0.2,
-        rnd1c = Math.cos(rnd1),
-        rnd1s = Math.sin(rnd1),
-        rnd2c = Math.cos(rnd2),
-        rnd2s = Math.sin(rnd2);
-
-      c.width = window.innerWidth;
-      c.height = window.innerHeight;
-      sc = Math.max(c.width, c.height);
-      $.translate(c.width * 0.5, c.height * 0.5);
-      $.scale(sc, sc);
-
-      g = $.createLinearGradient(-1, -2, 1, 2);
-      g.addColorStop(0.0, 'hsla(' + u * 5 + ',90%,50%, 1)');
-      g.addColorStop(0.5, 'hsla(0,0%,0%,1)');
-      g.addColorStop(1.0, 'hsla(' + u + ',90%,50%, 1)');
-      $.fillStyle = g;
-      $.fillRect(-0.5, -0.5, 1, 1);
-
-      $.rotate(rnd3 % Math.PI * 2);
-      for (i = 0; i < 360; i += 1) {
-
-        p = rnd();
-        x = (p & 0xff) / 128 - 1;
-        y = (p >>> 8 & 0xff) / 128 - 1;
-        z = (p >>> 16 & 0xff) / 128 - 1;
-        w = (p >>> 24 & 0xff) / 256;
-
-        z += d * 0.5;
-        z = (z + 1) % 2 - 1;
-
-        a = (z + 1) * 0.5;
-        if (a < 0.9) {
-          $.globalAlpha = a / 0.9;
-        } else {
-          a -= 0.9;
-          $.globalAlpha = 1 - a / 0.1;
-        }
-
-        cur = x * rnd1c + y * rnd1s;
-        y = x * rnd1s - y * rnd1c;
-        x = cur;
-
-        cur = y * rnd2c + z * rnd2s;
-        z = y * rnd2s - z * rnd2c;
-        y = cur;
-
-        z -= 0.75;
-        if (z >= 0) {
-          continue;
-        }
-        sc = 0.15 / z;
-        x *= sc;
-        y *= sc;
-
-        $.save();
-        g1 = $.createRadialGradient(1, -2, 2, 1, 2, 2);
-        g1.addColorStop(0.0, 'hsla(' + u * 5 + ',95%,50%, .8)');
-        g1.addColorStop(0.5, 'hsla(' + u * 5 + ',95%,50%, .4)');
-        g1.addColorStop(1.0, 'hsla(' + u + ',95%,50%, .8)');
-        $.fillStyle = g1;
-        $.translate(x, y);
-        $.scale(sc * 0.02, sc * 0.02);
-        $.rotate(w * Math.PI * 2);
-        $.beginPath();
-        $.arc(2, 0, 1.2, 0, Math.PI * 2);
-        $.rotate(Math.PI * 2 * 0.1);
-        $.closePath();
-        $.fill();
-        $.restore();
-      }
+    const loginLocale = navigator.language.toLowerCase().startsWith('en') ? 'en' : 'fr';
+    const loginTranslations = {
+      fr: { tokenPlaceholder: 'Token Discord', submit: 'Se connecter', helpLink: "Besoin d'aide ? Rejoins notre communauté", joinServer: 'Rejoindre le nouveau serveur', invalidToken: 'Token invalide ou expiré', networkError: 'Erreur réseau' },
+      en: { tokenPlaceholder: 'Discord token', submit: 'Sign in', helpLink: 'Need help? Join our community', joinServer: 'Join the new server', invalidToken: 'Invalid or expired token', networkError: 'Network error' }
     };
-    window.addEventListener('resize', function() {
-      c.width = window.innerWidth;
-      c.height = window.innerHeight;
-    }, false);
-    window.requestAnimFrame = (function() {
-      return window.requestAnimationFrame ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame ||
-        window.oRequestAnimationFrame ||
-        window.msRequestAnimationFrame ||
-        function(callback) {
-          window.setTimeout(callback, 1000 / 60);
-        };
-    })();
-    var run = function() {
-      window.requestAnimFrame(run);
-      go();
-      u -= .2;
-    }
-    run();
+    const loginText = loginTranslations[loginLocale];
+    document.documentElement.lang = loginLocale;
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      element.textContent = loginText[element.dataset.i18n];
+    });
+    document.getElementById('tokenInput').placeholder = loginText.tokenPlaceholder;
+    document.getElementById('sendBtn').textContent = loginText.submit;
 
     // Initialize Lucide icons
     lucide.createIcons();
@@ -1234,14 +1130,14 @@
           });
           const data = await res.json();
           if (data.success) {
-            window.location.href = data.redirect || '/dashboard';
+            window.location.replace(data.redirect || '/dashboard');
           } else {
-            loginError.textContent = data.error || 'Token invalide';
+            loginError.textContent = loginText.invalidToken;
             tokenInput.style.opacity = '1';
             tokenInput.disabled = false;
           }
         } catch {
-          loginError.textContent = 'Erreur réseau';
+          loginError.textContent = loginText.networkError;
           tokenInput.style.opacity = '1';
           tokenInput.disabled = false;
         }
@@ -1267,15 +1163,15 @@
         });
         const data = await res.json();
         if (data.success) {
-          window.location.href = data.redirect || '/dashboard';
+          window.location.replace(data.redirect || '/dashboard');
         } else {
-          loginError.textContent = data.error || 'Token invalide';
+          loginError.textContent = loginText.invalidToken;
           tokenInput.style.opacity = '1';
           tokenInput.disabled = false;
           sendBtn.disabled = false;
         }
       } catch {
-        loginError.textContent = 'Erreur réseau';
+        loginError.textContent = loginText.networkError;
         tokenInput.style.opacity = '1';
         tokenInput.disabled = false;
         sendBtn.disabled = false;
